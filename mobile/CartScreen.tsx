@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import type { CartLine } from "./types";
 import { API_BASE_URL, DEVICE_KEY } from "./config";
+import { printOrder } from "./printer";
 
 function money(n: number) {
   return `${n % 1 === 0 ? n.toFixed(0) : n.toFixed(2)} ₺`;
@@ -59,6 +60,21 @@ export default function CartScreen({
       }
 
       const data = await res.json();
+      await printOrder(
+        {
+          orderNumber: data.order.orderNumber,
+          tableNumber: data.order.tableNumber,
+          total: Number(data.order.total),
+          items: cart.map((line) => ({
+            name: line.name,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            note: line.note,
+            choiceNames: line.choiceNames,
+          })),
+        },
+        "", // TODO: /api/menu'den ya da ayrı bir ayardan işletme adını çek
+      );
       Alert.alert("Sipariş alındı", `Sipariş no: ${data.order.orderNumber}\nMutfağa iletiliyor.`);
       onClear();
     } catch (err) {

@@ -127,6 +127,24 @@ export const printJobs = pgTable("print_jobs", {
   sentAt: timestamp("sent_at"),
 });
 
+// Mutfak/kasa yazıcıları. Bağlantı tipi ne olursa olsun (Bluetooth, ağ/wifi
+// üzerinden IP, ya da USB) buradan tanımlanıp admin panelinden eklenip
+// çıkarılabiliyor. Tablet uygulaması aktif olan(lar)ı /api/printers'tan çekip
+// kullanıyor.
+export const PRINTER_TYPES = ["bluetooth", "network", "usb"] as const;
+
+export const printers = pgTable("printers", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  type: varchar("type", { length: 20 }).notNull(), // bluetooth | network | usb
+  // bluetooth: MAC adresi, network: IP:port, usb: cihazdaki tanımlayıcı/isim
+  address: varchar("address", { length: 255 }).notNull(),
+  paperWidthMm: integer("paper_width_mm").notNull().default(80), // 58 veya 80 yaygın
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const adminUsers = pgTable("admin_users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),

@@ -47,6 +47,12 @@ export default async function AdminLayout({
               Ürünler
             </Link>
             <Link
+              href="/admin/printers"
+              className="rounded-full px-3 py-1.5 text-muted transition hover:bg-surface hover:text-foreground"
+            >
+              Yazıcılar
+            </Link>
+            <Link
               href="/admin/settings"
               className="rounded-full px-3 py-1.5 text-muted transition hover:bg-surface hover:text-foreground"
             >

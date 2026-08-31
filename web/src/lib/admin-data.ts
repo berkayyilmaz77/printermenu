@@ -5,6 +5,7 @@ import {
   menuItems,
   optionGroups,
   optionChoices,
+  printers,
 } from "@/db/schema";
 import { asc, eq, inArray } from "drizzle-orm";
 
@@ -12,6 +13,12 @@ export type AdminCategory = typeof categories.$inferSelect;
 export type AdminMenuItem = typeof menuItems.$inferSelect;
 export type AdminOptionGroup = typeof optionGroups.$inferSelect;
 export type AdminOptionChoice = typeof optionChoices.$inferSelect;
+export type AdminPrinter = typeof printers.$inferSelect;
+
+export async function getPrintersAdmin(): Promise<AdminPrinter[]> {
+  const db = getDb();
+  return db.select().from(printers).orderBy(asc(printers.sortOrder));
+}
 
 // Admin panelinde public sayfadan farklı olarak satışta olmayan (isAvailable:
 // false) ürünler de görünür — yönetici hepsini görüp düzenleyebilmeli.

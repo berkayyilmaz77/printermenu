@@ -7,6 +7,8 @@ import {
   optionGroups,
   optionChoices,
   settings,
+  printers,
+  PRINTER_TYPES,
   ALLERGEN_CODES,
 } from "@/db/schema";
 import { auth } from "@/auth";
@@ -336,6 +338,78 @@ export async function deleteOptionChoice(choiceId: number, menuItemId: number) {
   await db.delete(optionChoices).where(eq(optionChoices.id, choiceId));
   revalidatePath(`/admin/menu-items/${menuItemId}/edit`);
   revalidatePath("/menu");
+}
+
+// ---------- Yazıcılar ----------
+
+export async function createPrinter(formData: FormData) {
+  await requireAdmin();
+  const name = str(formData, "name");
+  const type = str(formData, "type");
+  const address = str(formData, "address");
+  if (!name || !type || !address) {
+    throw new Error("İsim, bağlantı tipi ve adres zorunlu.");
+  }
+  if (!(PRINTER_TYPES as readonly string[]).includes(type)) {
+    throw new Error("Geçersiz bağlantı tipi.");
+  }
+
+  const db = getDb();
+  const [{ maxSort }] = await db
+    .select({ maxSort: sql<number>`coalesce(max(${printers.sortOrder}), -1)` })
+    .from(printers);
+
+  await db.insert(printers).values({
+    name,
+    type,
+    address,
+    paperWidthMm: num(formData, "paperWidthMm") ?? 80,
+    isActive: formData.get("isActive") === "on",
+    sortOrder: maxSort + 1,
+  });
+
+  revalidatePath("/admin/printers");
+}
+
+export async function updatePrinter(id: number, formData: FormData) {
+  await requireAdmin();
+  const name = str(formData, "name");
+  const type = str(formData, "type");
+  const address = str(formData, "address");
+  if (!name || !type || !address) {
+    throw new Error("İsim, bağlantı tipi ve adres zorunlu.");
+  }
+  if (!(PRINTER_TYPES as readonly string[]).includes(type)) {
+    throw new Error("Geçersiz bağlantı tipi.");
+  }
+
+  const db = getDb();
+  await db
+    .update(printers)
+    .set({
+      name,
+      type,
+      address,
+      paperWidthMm: num(formData, "paperWidthMm") ?? 80,
+      isActive: formData.get("isActive") === "on",
+    })
+    .where(eq(printers.id, id));
+
+  revalidatePath("/admin/printers");
+}
+
+export async function deletePrinter(id: number) {
+  await requireAdmin();
+  const db = getDb();
+  await db.delete(printers).where(eq(printers.id, id));
+  revalidatePath("/admin/printers");
+}
+
+export async function togglePrinterActive(id: number, next: boolean) {
+  await requireAdmin();
+  const db = getDb();
+  await db.update(printers).set({ isActive: next }).where(eq(printers.id, id));
+  revalidatePath("/admin/printers");
 }
 
 // ---------- Ayarlar ----------
