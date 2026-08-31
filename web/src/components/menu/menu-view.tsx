@@ -43,7 +43,13 @@ function itemDescription(item: PublicMenuItem, lang: Lang) {
   return lang === "en" && item.descriptionEn ? item.descriptionEn : item.description;
 }
 
-export function MenuView({ categories }: { categories: PublicCategory[] }) {
+export function MenuView({
+  categories,
+  businessName,
+}: {
+  categories: PublicCategory[];
+  businessName?: string | null;
+}) {
   const [lang, setLang] = useState<Lang>("tr");
   const [activeCategory, setActiveCategory] = useState<number | "all">("all");
   const [openItem, setOpenItem] = useState<PublicMenuItem | null>(null);
@@ -79,7 +85,7 @@ export function MenuView({ categories }: { categories: PublicCategory[] }) {
           <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-muted">
             {t.digitalMenu}
           </p>
-          <h1 className="text-2xl font-bold sm:text-3xl">Menü</h1>
+          <h1 className="text-2xl font-bold sm:text-3xl">{businessName || "Menü"}</h1>
         </div>
 
         {/* Kategori sekmeleri */}

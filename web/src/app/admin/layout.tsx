@@ -40,6 +40,12 @@ export default async function AdminLayout({
             >
               Ürünler
             </Link>
+            <Link
+              href="/admin/settings"
+              className="rounded-full px-3 py-1.5 text-muted transition hover:bg-surface hover:text-foreground"
+            >
+              Ayarlar
+            </Link>
             <span className="mx-2 hidden text-xs text-muted sm:inline">
               {session.user.email}
             </span>

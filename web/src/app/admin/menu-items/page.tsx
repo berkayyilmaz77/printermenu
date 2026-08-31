@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getMenuItemsAdmin } from "@/lib/admin-data";
 import { AvailabilityToggle } from "./availability-toggle";
 import { DeleteItemButton } from "./delete-item-button";
+import { MoveButtons } from "./move-buttons";
 
 function money(value: string) {
   const n = Number(value);
@@ -59,7 +60,7 @@ export default async function AdminMenuItemsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {catItems.map((item) => (
+                    {catItems.map((item, i) => (
                       <tr key={item.id} className="border-t border-border">
                         <td className="px-4 py-3 font-medium">{item.name}</td>
                         <td className="px-4 py-3 text-muted">
@@ -75,6 +76,11 @@ export default async function AdminMenuItemsPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
+                            <MoveButtons
+                              id={item.id}
+                              isFirst={i === 0}
+                              isLast={i === catItems.length - 1}
+                            />
                             <Link
                               href={`/admin/menu-items/${item.id}/edit`}
                               className="rounded-full border border-border px-3 py-1 text-xs text-muted transition hover:text-foreground"

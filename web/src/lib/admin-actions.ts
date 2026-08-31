@@ -6,6 +6,7 @@ import {
   menuItems,
   optionGroups,
   optionChoices,
+  settings,
   ALLERGEN_CODES,
 } from "@/db/schema";
 import { auth } from "@/auth";
@@ -221,6 +222,42 @@ export async function deleteMenuItem(id: number) {
   revalidatePath("/menu");
 }
 
+export async function moveMenuItem(id: number, direction: "up" | "down") {
+  await requireAdmin();
+  const db = getDb();
+  const [item] = await db
+    .select()
+    .from(menuItems)
+    .where(eq(menuItems.id, id))
+    .limit(1);
+  if (!item) return;
+
+  // Sıralama sadece kendi kategorisi içinde anlamlı.
+  const siblings = await db
+    .select()
+    .from(menuItems)
+    .where(eq(menuItems.categoryId, item.categoryId))
+    .orderBy(asc(menuItems.sortOrder));
+
+  const index = siblings.findIndex((s) => s.id === id);
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= siblings.length) return;
+
+  const a = siblings[index];
+  const b = siblings[swapWith];
+  await db
+    .update(menuItems)
+    .set({ sortOrder: b.sortOrder })
+    .where(eq(menuItems.id, a.id));
+  await db
+    .update(menuItems)
+    .set({ sortOrder: a.sortOrder })
+    .where(eq(menuItems.id, b.id));
+
+  revalidatePath("/admin/menu-items");
+  revalidatePath("/menu");
+}
+
 export async function toggleMenuItemAvailability(id: number, next: boolean) {
   await requireAdmin();
   const db = getDb();
@@ -298,5 +335,27 @@ export async function deleteOptionChoice(choiceId: number, menuItemId: number) {
   const db = getDb();
   await db.delete(optionChoices).where(eq(optionChoices.id, choiceId));
   revalidatePath(`/admin/menu-items/${menuItemId}/edit`);
+  revalidatePath("/menu");
+}
+
+// ---------- Ayarlar ----------
+
+export async function updateSettings(formData: FormData) {
+  await requireAdmin();
+  const db = getDb();
+
+  const entries: [string, string | null][] = [
+    ["business_name", str(formData, "businessName")],
+  ];
+
+  for (const [key, value] of entries) {
+    if (value === null) continue;
+    await db
+      .insert(settings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: settings.key, set: { value } });
+  }
+
+  revalidatePath("/admin/settings");
   revalidatePath("/menu");
 }
