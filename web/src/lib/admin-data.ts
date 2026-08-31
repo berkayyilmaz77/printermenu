@@ -6,7 +6,7 @@ import {
   optionGroups,
   optionChoices,
 } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 
 export type AdminCategory = typeof categories.$inferSelect;
 export type AdminMenuItem = typeof menuItems.$inferSelect;
@@ -73,17 +73,15 @@ export async function getMenuItemAdmin(id: number) {
     .where(eq(optionGroups.menuItemId, id))
     .orderBy(asc(optionGroups.sortOrder));
 
-  // Gruplara ait tüm seçenekleri tek seferde çekip grup id'sine göre dağıtıyoruz.
+  // Gruplara ait tüm seçenekleri tek sorguda çekip grup id'sine göre dağıtıyoruz.
   const groupIds = groups.map((g) => g.id);
-  const allChoices: AdminOptionChoice[] = [];
-  for (const gid of groupIds) {
-    const rows = await db
-      .select()
-      .from(optionChoices)
-      .where(eq(optionChoices.groupId, gid))
-      .orderBy(asc(optionChoices.sortOrder));
-    allChoices.push(...rows);
-  }
+  const allChoices = groupIds.length
+    ? await db
+        .select()
+        .from(optionChoices)
+        .where(inArray(optionChoices.groupId, groupIds))
+        .orderBy(asc(optionChoices.sortOrder))
+    : [];
 
   const choicesByGroup = new Map<number, AdminOptionChoice[]>();
   for (const c of allChoices) {
