@@ -38,3 +38,32 @@ npm run dev
 - `src/db/schema.ts` — Drizzle şeması (Postgres/Neon)
 - `src/lib/menu-data.ts` — public menü verisi (`/menu` bu fonksiyonu kullanır)
 - `src/lib/admin-data.ts` / `admin-actions.ts` — admin paneli okuma/yazma
+
+## Tablet uygulaması için API
+
+Sipariş verme ve yazıcı entegrasyonu bu depoda değil, ayrı bir tablet uygulamasında —
+o uygulamanın kullanacağı iki endpoint burada hazır:
+
+- `GET /api/menu` — herkese açık, `/menu` ile aynı veri (JSON).
+- `POST /api/orders` — sipariş oluşturur (order + order_items + option seçimleri +
+  `print_jobs` tablosuna `pending` durumunda bir satır). Spam sipariş/print job
+  oluşturulmasını engellemek için `x-device-key` header'ında `TABLET_API_KEY`
+  (`.env.local`) bekleniyor — gerçek kullanıcı auth'u değil, sadece "bu istek
+  bizim tabletten geldi" kontrolü. Fiyatlar hiçbir zaman client'tan alınmaz,
+  her zaman DB'deki güncel `price`/`priceDelta` üzerinden hesaplanır.
+
+  ```json
+  POST /api/orders
+  x-device-key: <TABLET_API_KEY>
+
+  {
+    "tableNumber": "5",
+    "items": [
+      { "menuItemId": 1, "quantity": 2, "note": "az pişmiş", "choiceIds": [3] }
+    ]
+  }
+  ```
+
+  Fiziksel yazıcıya gönderme adımı burada yok — `print_jobs.status`u `pending`den
+  `sent`/`failed`e çeviren mekanizma, printer donanımına göre tablet uygulaması
+  tarafında (veya ona göre eklenecek ayrı bir worker'da) olacak.
