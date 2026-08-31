@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { getPublicMenu } from "@/lib/menu-data";
 import { getSetting, SETTINGS_KEYS } from "@/lib/settings";
 import { MenuView } from "@/components/menu/menu-view";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const businessName = await getSetting(SETTINGS_KEYS.businessName);
+  return { title: businessName ? `${businessName} — Menü` : "Menü" };
+}
 
 // QR koddan açılan herkese açık, salt-okunur menü sayfası. Sipariş bu sayfadan
 // verilmez (sipariş mobil uygulamadaki tabletten alınır, yazıcı entegrasyonu

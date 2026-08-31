@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PrinterMenu — QR menü + yönetim paneli
 
-## Getting Started
+Restoran/kafe için QR ile açılan dijital menü ve bu menüyü yöneten admin paneli. Sipariş
+verme ve yazıcı entegrasyonu bu depoda değil, ayrı bir mobil/tablet uygulamasında.
 
-First, run the development server:
+## Kurulum
+
+```bash
+npm install
+```
+
+`.env.local` içinde şunlar tanımlı olmalı (Vercel ile bağlıysa `vercel env pull` ile çekilir):
+
+- `DATABASE_URL` — Neon Postgres bağlantısı
+- `BLOB_READ_WRITE_TOKEN` — ürün görselleri için Vercel Blob
+- `AUTH_SECRET` — next-auth JWT imzalama anahtarı (`openssl rand -base64 32` ile üretilir).
+  Prod'a deploy edilecekse Vercel proje ayarlarına da eklenmeli.
+
+Şema zaten Neon DB'ye push edilmiş durumda (bkz. `src/db/schema.ts`). Şemada değişiklik
+yaparsan `npx drizzle-kit push` ile senkronize et.
+
+### İlk admin kullanıcısını oluşturma
+
+```bash
+node --env-file=.env.local scripts/create-admin.mjs <email> <şifre>
+```
+
+Aynı email ile tekrar çalıştırırsan şifreyi günceller.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Yapı
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/menu` — herkese açık, salt-okunur QR menü (TR/EN)
+- `/admin` — kategori/ürün/ayar yönetimi, next-auth ile korunuyor
+- `src/db/schema.ts` — Drizzle şeması (Postgres/Neon)
+- `src/lib/menu-data.ts` — public menü verisi (`/menu` bu fonksiyonu kullanır)
+- `src/lib/admin-data.ts` / `admin-actions.ts` — admin paneli okuma/yazma

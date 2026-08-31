@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { logoutAction } from "@/lib/auth-actions";
+
+export const metadata: Metadata = {
+  title: "Yönetim Paneli",
+  robots: { index: false, follow: false },
+};
 
 // /admin/login kendi basit sayfası — bu layout'un nav'ını görmesin diye
 // burada session'a bakıp login sayfasındaysak sade bir kabuk döndürüyoruz.
