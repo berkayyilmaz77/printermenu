@@ -12,7 +12,6 @@ export async function loginAction(
   const callbackUrl = (formData.get("callbackUrl") as string) || "/admin";
   try {
     await signIn("credentials", {
-      email: formData.get("email"),
       password: formData.get("password"),
       redirectTo: callbackUrl,
     });
@@ -22,7 +21,7 @@ export async function loginAction(
     // yoksa yönlendirme gerçekleşmez. Sadece gerçek kimlik doğrulama
     // hatalarını burada yakalayıp forma geri döndürüyoruz.
     if (error instanceof AuthError) {
-      return { error: "E-posta veya şifre hatalı." };
+      return { error: "Şifre hatalı." };
     }
     throw error;
   }

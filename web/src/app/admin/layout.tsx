@@ -58,9 +58,6 @@ export default async function AdminLayout({
             >
               Ayarlar
             </Link>
-            <span className="mx-2 hidden text-xs text-muted sm:inline">
-              {session.user.email}
-            </span>
             <form action={logoutAction}>
               <button
                 type="submit"

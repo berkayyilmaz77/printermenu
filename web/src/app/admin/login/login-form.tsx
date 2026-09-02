@@ -10,19 +10,6 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
     <form action={action} className="space-y-4">
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium text-muted">
-          E-posta
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="username"
-          className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-muted"
-        />
-      </div>
-      <div>
         <label htmlFor="password" className="mb-1 block text-sm font-medium text-muted">
           Şifre
         </label>
@@ -31,6 +18,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           name="password"
           type="password"
           required
+          autoFocus
           autoComplete="current-password"
           className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-muted"
         />
