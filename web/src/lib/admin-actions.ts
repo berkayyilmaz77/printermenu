@@ -12,9 +12,10 @@ import {
   ALLERGEN_CODES,
 } from "@/db/schema";
 import { auth } from "@/auth";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { put } from "@vercel/blob";
+import { PRESET_OPTION_GROUPS, type PresetOptionGroupKind } from "./option-presets";
 
 // Bütün mutasyonlar server action — proxy.ts optimistic bir kontrol yapıyor
 // ama Server Action'lar proxy matcher'ından bağımsız da çağrılabildiği için
@@ -272,6 +273,46 @@ export async function toggleMenuItemAvailability(id: number, next: boolean) {
 }
 
 // ---------- Seçenek grupları / seçenekler ----------
+
+// Admin panelindeki "Boy" / "Ekstra Malzeme" kutucukları işaretlendiğinde
+// çağrılır — o isimde grup zaten varsa tekrar oluşturmuyor (checkbox'ı
+// hızlı açıp kapatınca veya sayfa iki kere submit edilince kopya grup
+// oluşmasın diye).
+export async function enablePresetOptionGroup(
+  menuItemId: number,
+  kind: PresetOptionGroupKind,
+) {
+  await requireAdmin();
+  const preset = PRESET_OPTION_GROUPS[kind];
+  const db = getDb();
+
+  const [existing] = await db
+    .select({ id: optionGroups.id })
+    .from(optionGroups)
+    .where(and(eq(optionGroups.menuItemId, menuItemId), eq(optionGroups.name, preset.name)))
+    .limit(1);
+  if (existing) {
+    revalidatePath(`/admin/menu-items/${menuItemId}/edit`);
+    return;
+  }
+
+  const [{ maxSort }] = await db
+    .select({ maxSort: sql<number>`coalesce(max(${optionGroups.sortOrder}), -1)` })
+    .from(optionGroups)
+    .where(eq(optionGroups.menuItemId, menuItemId));
+
+  await db.insert(optionGroups).values({
+    menuItemId,
+    name: preset.name,
+    required: preset.required,
+    minSelect: preset.minSelect,
+    maxSelect: preset.maxSelect,
+    sortOrder: maxSort + 1,
+  });
+
+  revalidatePath(`/admin/menu-items/${menuItemId}/edit`);
+  revalidatePath("/menu");
+}
 
 export async function addOptionGroup(menuItemId: number, formData: FormData) {
   await requireAdmin();
