@@ -1,17 +1,12 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  TextInput,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import type { CartLine } from "./types";
 import { API_BASE_URL, DEVICE_KEY } from "./config";
 import { printOrder } from "./printer";
+import { colors, radius, spacing, typography, cardShadow, backgroundGradient } from "./theme";
 
 function money(n: number) {
   return `${n % 1 === 0 ? n.toFixed(0) : n.toFixed(2)} ₺`;
@@ -19,11 +14,13 @@ function money(n: number) {
 
 export default function CartScreen({
   cart,
+  businessName,
   onRemove,
   onClear,
   onBack,
 }: {
   cart: CartLine[];
+  businessName: string | null;
   onRemove: (key: string) => void;
   onClear: () => void;
   onBack: () => void;
@@ -73,7 +70,7 @@ export default function CartScreen({
             choiceNames: line.choiceNames,
           })),
         },
-        "", // TODO: /api/menu'den ya da ayrı bir ayardan işletme adını çek
+        businessName ?? "",
       );
       Alert.alert("Sipariş alındı", `Sipariş no: ${data.order.orderNumber}\nMutfağa iletiliyor.`);
       onClear();
@@ -85,20 +82,23 @@ export default function CartScreen({
   }
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={backgroundGradient} style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <View style={styles.header}>
-        <Pressable onPress={onBack}>
-          <Text style={styles.back}>‹ Menü</Text>
+        <Pressable onPress={onBack} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={20} color={colors.foreground} />
+          <Text style={styles.backText}>Menü</Text>
         </Pressable>
         <Text style={styles.title}>Sepet</Text>
-        <View style={{ width: 50 }} />
+        <View style={{ width: 70 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         {cart.length === 0 && (
-          <Text style={{ color: "#9a9a9f", textAlign: "center", marginTop: 40 }}>
-            Sepet boş.
-          </Text>
+          <View style={styles.emptyState}>
+            <Ionicons name="cart-outline" size={36} color={colors.muted} />
+            <Text style={styles.emptyText}>Sepet boş.</Text>
+          </View>
         )}
         {cart.map((line) => (
           <View key={line.key} style={styles.line}>
@@ -111,21 +111,24 @@ export default function CartScreen({
               )}
             </View>
             <Text style={styles.linePrice}>{money(line.unitPrice * line.quantity)}</Text>
-            <Pressable onPress={() => onRemove(line.key)} style={{ marginLeft: 12 }}>
-              <Text style={{ color: "#e5484d" }}>Sil</Text>
+            <Pressable onPress={() => onRemove(line.key)} style={styles.removeButton}>
+              <Ionicons name="trash-outline" size={18} color={colors.accent} />
             </Pressable>
           </View>
         ))}
 
         {cart.length > 0 && (
           <>
-            <TextInput
-              placeholder="Masa no (opsiyonel)"
-              placeholderTextColor="#9a9a9f"
-              value={tableNumber}
-              onChangeText={setTableNumber}
-              style={styles.tableInput}
-            />
+            <View style={styles.tableInputWrap}>
+              <Ionicons name="restaurant-outline" size={16} color={colors.muted} />
+              <TextInput
+                placeholder="Masa no (opsiyonel)"
+                placeholderTextColor={colors.muted}
+                value={tableNumber}
+                onChangeText={setTableNumber}
+                style={styles.tableInput}
+              />
+            </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Toplam</Text>
               <Text style={styles.totalValue}>{money(total)}</Text>
@@ -137,60 +140,74 @@ export default function CartScreen({
       {cart.length > 0 && (
         <Pressable style={styles.submitButton} onPress={submitOrder} disabled={sending}>
           {sending ? (
-            <ActivityIndicator color="#0a0a0a" />
+            <ActivityIndicator color={colors.pillActiveFg} />
           ) : (
-            <Text style={styles.submitButtonText}>Siparişi Gönder</Text>
+            <>
+              <Ionicons name="checkmark-circle" size={20} color={colors.pillActiveFg} />
+              <Text style={styles.submitButtonText}>Siparişi Gönder</Text>
+            </>
           )}
         </Pressable>
       )}
-    </View>
+    </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
+  container: { flex: 1, backgroundColor: "transparent" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    paddingTop: 50,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: "#2a2a2e",
+    borderBottomColor: colors.border,
   },
-  back: { color: "#9a9a9f" },
-  title: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  backButton: { flexDirection: "row", alignItems: "center", width: 70 },
+  backText: { color: colors.muted, fontWeight: "600" },
+  title: { color: colors.foreground, ...typography.heading },
+  emptyState: { alignItems: "center", gap: spacing.sm, marginTop: 60 },
+  emptyText: { color: colors.muted },
   line: {
     flexDirection: "row",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1f1f23",
-    paddingVertical: 12,
-  },
-  lineName: { color: "#fff", fontWeight: "600" },
-  lineChoices: { color: "#9a9a9f", fontSize: 12, marginTop: 2 },
-  linePrice: { color: "#fff" },
-  tableInput: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "#2a2a2e",
-    borderRadius: 10,
-    padding: 12,
-    color: "#fff",
-    marginTop: 20,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
   },
-  totalRow: {
+  lineName: { color: colors.foreground, fontWeight: "700" },
+  lineChoices: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  linePrice: { color: colors.foreground, fontWeight: "700", marginLeft: spacing.sm },
+  removeButton: { marginLeft: spacing.md, padding: 4 },
+  tableInputWrap: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
-  },
-  totalLabel: { color: "#9a9a9f", fontSize: 16 },
-  totalValue: { color: "#fff", fontSize: 20, fontWeight: "bold" },
-  submitButton: {
-    backgroundColor: "#f5f5f5",
-    margin: 16,
-    borderRadius: 12,
-    padding: 16,
     alignItems: "center",
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.lg,
   },
-  submitButtonText: { color: "#0a0a0a", fontWeight: "bold", fontSize: 16 },
+  tableInput: { flex: 1, color: colors.foreground, paddingVertical: spacing.md, fontSize: 15 },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.xl },
+  totalLabel: { color: colors.muted, fontSize: 16 },
+  totalValue: { color: colors.foreground, fontSize: 22, fontWeight: "800" },
+  submitButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.pillActiveBg,
+    margin: spacing.lg,
+    borderRadius: radius.md,
+    paddingVertical: spacing.lg,
+    ...cardShadow,
+  },
+  submitButtonText: { color: colors.pillActiveFg, fontWeight: "800", fontSize: 16 },
 });

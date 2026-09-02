@@ -20,11 +20,11 @@ export default async function AdminLayout({
   if (!session?.user) {
     // proxy.ts zaten /admin/login dışındaki her şeyi bu duruma düşmeden
     // yönlendirir; bu sadece savunma amaçlı ikinci bir katman.
-    return <div className="min-h-screen bg-background text-foreground">{children}</div>;
+    return <div className="min-h-screen text-foreground">{children}</div>;
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
           <div>

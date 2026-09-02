@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --surface: #17171a;
-  --surface-2: #1f1f23;
-  --foreground: #f5f5f5;
-  --muted: #9a9a9f;
-  --border: #2a2a2e;
-  --accent: #e5484d;
-  --pill-active-bg: #f5f5f5;
-  --pill-active-fg: #0a0a0a;
+  --background: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #efece6;
+  --foreground: #1c1b18;
+  --muted: #757066;
+  --border: #e4e0d8;
+  --accent: #d9484d;
+  --pill-active-bg: #1c1b18;
+  --pill-active-fg: #f7f6f3;
 }
 
 @theme inline {
@@ -27,6 +27,30 @@
 }
 
 body {
-  background: var(--background);
+  /* Düz tek renk yerine hafif sıcak bir derinlik: üstte silik bir accent
+     parıltısı + köşelerde çok hafif bir doku, sayfa boyunca --background'a
+     yumuşak geçiş. Kartlar zaten --surface kullanıyor, bu sadece kanvas. */
+  background:
+    radial-gradient(1100px 520px at 12% -12%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, color-mix(in srgb, var(--foreground) 5%, transparent), transparent 55%),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
+}
+
+/* Kategori -> ürün listesi geçişinde kullanılan basit kayma animasyonu
+   (mobil uygulamadaki Animated slide ile aynı his — burada saf CSS). */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.22s ease-out;
 }

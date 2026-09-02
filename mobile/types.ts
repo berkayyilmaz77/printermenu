@@ -34,6 +34,11 @@ export type Category = {
   items: MenuItem[];
 };
 
+export type MenuResponse = {
+  categories: Category[];
+  businessName: string | null;
+};
+
 // Sepetteki bir satır. unitPrice, ürün fiyatı + seçilen seçeneklerin
 // priceDelta toplamı (sunucu zaten kendi hesaplıyor ama burada da
 // gösterim için tutuyoruz).

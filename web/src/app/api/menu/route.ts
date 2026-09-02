@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPublicMenu } from "@/lib/menu-data";
+import { getSetting, SETTINGS_KEYS } from "@/lib/settings";
 
 // Tablet uygulamasının menüyü çekmek için kullanacağı endpoint — /menu (QR
 // sayfası) ile aynı kaynağı (getPublicMenu) kullanır, sadece JSON döner.
@@ -7,9 +8,12 @@ import { getPublicMenu } from "@/lib/menu-data";
 export const revalidate = 30;
 
 export async function GET() {
-  const categories = await getPublicMenu();
+  const [categories, businessName] = await Promise.all([
+    getPublicMenu(),
+    getSetting(SETTINGS_KEYS.businessName),
+  ]);
   return NextResponse.json(
-    { categories },
+    { categories, businessName },
     { headers: { "Access-Control-Allow-Origin": "*" } },
   );
 }

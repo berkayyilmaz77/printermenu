@@ -3,30 +3,32 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import type { PublicCategory, PublicMenuItem } from "@/lib/menu-data";
-import { allergenLabel } from "@/lib/allergens";
+import { allergenLabel, allergenIcon } from "@/lib/allergens";
 
 type Lang = "tr" | "en";
 
 const UI_TEXT = {
   tr: {
     digitalMenu: "DİJİTAL MENÜ",
-    all: "Tümü",
     vegetarian: "Vejetaryen",
     vegan: "Vegan",
     allergens: "Alerjenler",
     options: "Seçenekler",
     empty: "Menüde henüz ürün yok.",
     campaign: "İndirim",
+    items: (n: number) => `${n} ürün`,
+    backToCategories: "Kategoriler",
   },
   en: {
     digitalMenu: "DIGITAL MENU",
-    all: "All",
     vegetarian: "Vegetarian",
     vegan: "Vegan",
     allergens: "Allergens",
     options: "Options",
     empty: "No items in the menu yet.",
     campaign: "Sale",
+    items: (n: number) => `${n} items`,
+    backToCategories: "Categories",
   },
 } as const;
 
@@ -43,6 +45,17 @@ function itemDescription(item: PublicMenuItem, lang: Lang) {
   return lang === "en" && item.descriptionEn ? item.descriptionEn : item.description;
 }
 
+function categoryName(c: PublicCategory, lang: Lang) {
+  return lang === "en" && c.nameEn ? c.nameEn : c.name;
+}
+
+// Kategori kartında kapak resmi olarak kullanılıyor — categories tablosunda
+// ayrı bir resim alanı yok, kategorideki ilk resimli ürünü kullanıyoruz
+// (mobil uygulamadaki App.tsx'teki coverImage() ile aynı mantık).
+function coverImage(c: PublicCategory): string | null {
+  return c.items.find((i) => i.imageUrl)?.imageUrl ?? null;
+}
+
 export function MenuView({
   categories,
   businessName,
@@ -51,17 +64,17 @@ export function MenuView({
   businessName?: string | null;
 }) {
   const [lang, setLang] = useState<Lang>("tr");
-  const [activeCategory, setActiveCategory] = useState<number | "all">("all");
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [openItem, setOpenItem] = useState<PublicMenuItem | null>(null);
   const t = UI_TEXT[lang];
 
-  const visibleCategories = useMemo(() => {
-    if (activeCategory === "all") return categories;
-    return categories.filter((c) => c.id === activeCategory);
-  }, [categories, activeCategory]);
+  const activeCategory = useMemo(
+    () => categories.find((c) => c.id === activeCategoryId) ?? null,
+    [categories, activeCategoryId],
+  );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
         {/* Üst bar: dil seçici */}
         <div className="mb-6 flex justify-start gap-2">
@@ -88,102 +101,120 @@ export function MenuView({
           <h1 className="text-2xl font-bold sm:text-3xl">{businessName || "Menü"}</h1>
         </div>
 
-        {/* Kategori sekmeleri */}
-        <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
-          <button
-            onClick={() => setActiveCategory("all")}
-            className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
-              activeCategory === "all"
-                ? "border-transparent bg-pill-active-bg text-pill-active-fg"
-                : "border-border text-muted hover:text-foreground"
-            }`}
-          >
-            {t.all}
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setActiveCategory(c.id)}
-              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                activeCategory === c.id
-                  ? "border-transparent bg-pill-active-bg text-pill-active-fg"
-                  : "border-border text-muted hover:text-foreground"
-              }`}
-            >
-              {lang === "en" && c.nameEn ? c.nameEn : c.name}
-            </button>
-          ))}
-        </div>
-
         {categories.length === 0 && (
           <p className="py-16 text-center text-muted">{t.empty}</p>
         )}
 
-        {/* Kategoriler ve ürünler */}
-        <div className="space-y-10">
-          {visibleCategories.map((c) => (
-            <section key={c.id}>
-              <h2 className="mb-4 text-lg font-bold">
-                {lang === "en" && c.nameEn ? c.nameEn : c.name}
-              </h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {c.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setOpenItem(item)}
-                    className="group overflow-hidden rounded-2xl border border-border bg-surface text-left transition hover:border-muted"
-                  >
-                    <div className="relative aspect-[4/3] w-full bg-surface-2">
-                      {item.imageUrl && (
-                        <Image
-                          src={item.imageUrl}
-                          alt={itemName(item, lang)}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, 33vw"
-                        />
-                      )}
-                      {item.originalPrice && (
-                        <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-1 text-[10px] font-bold text-white">
-                          {t.campaign}
-                        </span>
-                      )}
-                      <span className="absolute right-2 top-2 flex flex-col items-end gap-1">
-                        {item.originalPrice && (
-                          <span className="rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white/70 line-through">
-                            {money(item.originalPrice, lang)}
-                          </span>
-                        )}
-                        <span className="rounded-full bg-pill-active-bg px-2.5 py-1 text-xs font-bold text-pill-active-fg">
-                          {money(item.price, lang)}
-                        </span>
+        {!activeCategory ? (
+          // Ana ekran: kategoriler kare, resimli kartlar halinde — 2'li ızgara
+          // (mobil uygulamadaki App.tsx'teki grid ile aynı düzen).
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {categories.map((c) => {
+              const cover = coverImage(c);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveCategoryId(c.id)}
+                  className="group relative block aspect-square w-full overflow-hidden rounded-2xl border border-border text-left"
+                >
+                  {cover ? (
+                    <Image
+                      src={cover}
+                      alt={categoryName(c, lang)}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 384px"
+                      className="object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-surface-2 text-muted">
+                      🍽️
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-3 sm:p-4">
+                    <div>
+                      <p className="text-sm font-bold text-white sm:text-lg">
+                        {categoryName(c, lang)}
+                      </p>
+                      <p className="text-[11px] font-medium text-white/75 sm:text-xs">
+                        {t.items(c.items.length)}
+                      </p>
+                    </div>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/45 text-sm text-white transition group-hover:translate-x-0.5 sm:h-8 sm:w-8 sm:text-base">
+                      →
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          // Kategori detay: seçilen kategorideki ürünler.
+          <div className="animate-slide-in">
+            <button
+              onClick={() => setActiveCategoryId(null)}
+              className="mb-5 flex items-center gap-1 text-sm font-medium text-muted transition hover:text-foreground"
+            >
+              ← {t.backToCategories}
+            </button>
+            <h2 className="mb-4 text-lg font-bold">{categoryName(activeCategory, lang)}</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {activeCategory.items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setOpenItem(item)}
+                  className="group overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="relative aspect-[4/3] w-full bg-surface-2">
+                    {item.imageUrl && (
+                      <Image
+                        src={item.imageUrl}
+                        alt={itemName(item, lang)}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 33vw"
+                      />
+                    )}
+                    {item.originalPrice && (
+                      <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-1 text-[10px] font-bold text-white">
+                        {t.campaign}
                       </span>
-                    </div>
-                    <div className="p-3">
-                      <p className="font-semibold">{itemName(item, lang)}</p>
-                      {itemDescription(item, lang) && (
-                        <p className="mt-1 line-clamp-2 text-sm text-muted">
-                          {itemDescription(item, lang)}
-                        </p>
+                    )}
+                    <span className="absolute right-2 top-2 flex flex-col items-end gap-1">
+                      {item.originalPrice && (
+                        <span className="rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white/70 line-through">
+                          {money(item.originalPrice, lang)}
+                        </span>
                       )}
-                      {(item.isVegetarian || item.isVegan || item.allergens.length > 0) && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {item.isVegetarian && <Tag>{t.vegetarian}</Tag>}
-                          {item.isVegan && <Tag>{t.vegan}</Tag>}
-                          {item.allergens.map((a) => (
-                            <Tag key={a} muted>
-                              {allergenLabel(a, lang)}
-                            </Tag>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+                      <span className="rounded-full bg-pill-active-bg px-2.5 py-1 text-xs font-bold text-pill-active-fg">
+                        {money(item.price, lang)}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <p className="font-semibold">{itemName(item, lang)}</p>
+                    {itemDescription(item, lang) && (
+                      <p className="mt-1 line-clamp-2 text-sm text-muted">
+                        {itemDescription(item, lang)}
+                      </p>
+                    )}
+                    {(item.isVegetarian || item.isVegan || item.allergens.length > 0) && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {item.isVegetarian && <Tag tone="good">🌿 {t.vegetarian}</Tag>}
+                        {item.isVegan && <Tag tone="good">🌱 {t.vegan}</Tag>}
+                        {item.allergens.map((a) => (
+                          <Tag key={a}>
+                            {allergenIcon(a)} {allergenLabel(a, lang)}
+                          </Tag>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {openItem && (
@@ -193,11 +224,13 @@ export function MenuView({
   );
 }
 
-function Tag({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
+function Tag({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "good" }) {
   return (
     <span
       className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-        muted ? "border-border text-muted" : "border-emerald-800 text-emerald-400"
+        tone === "good"
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-border bg-surface-2 text-muted"
       }`}
     >
       {children}
@@ -218,7 +251,7 @@ function ItemModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center"
       onClick={onClose}
     >
       <div
@@ -254,11 +287,11 @@ function ItemModal({
 
           {(item.isVegetarian || item.isVegan || item.allergens.length > 0) && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {item.isVegetarian && <Tag>{t.vegetarian}</Tag>}
-              {item.isVegan && <Tag>{t.vegan}</Tag>}
+              {item.isVegetarian && <Tag tone="good">🌿 {t.vegetarian}</Tag>}
+              {item.isVegan && <Tag tone="good">🌱 {t.vegan}</Tag>}
               {item.allergens.map((a) => (
-                <Tag key={a} muted>
-                  {allergenLabel(a, lang)}
+                <Tag key={a}>
+                  {allergenIcon(a)} {allergenLabel(a, lang)}
                 </Tag>
               ))}
             </div>
@@ -274,7 +307,7 @@ function ItemModal({
                     {g.choices.map((c) => (
                       <span
                         key={c.id}
-                        className="rounded-full border border-border px-2.5 py-1 text-xs"
+                        className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs"
                       >
                         {c.name}
                         {Number(c.priceDelta) > 0 && ` (+${money(c.priceDelta, lang)})`}

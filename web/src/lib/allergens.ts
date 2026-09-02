@@ -13,7 +13,23 @@ export const ALLERGEN_LABELS: Record<AllergenCode, { tr: string; en: string }> =
   susam: { tr: "Susam", en: "Sesame" },
 };
 
+// Mobil uygulamadaki allergens.ts ile aynı ikonlar — iki yüzde de aynı görünsün diye.
+export const ALLERGEN_ICONS: Record<AllergenCode, string> = {
+  gluten: "🌾",
+  sut: "🥛",
+  yumurta: "🥚",
+  findik: "🥜",
+  soya: "🫘",
+  balik: "🐟",
+  kabuklu_deniz_urunu: "🦐",
+  susam: "🟤",
+};
+
 export function allergenLabel(code: string, lang: "tr" | "en"): string {
   const entry = ALLERGEN_LABELS[code as AllergenCode];
   return entry ? entry[lang] : code;
+}
+
+export function allergenIcon(code: string): string {
+  return ALLERGEN_ICONS[code as AllergenCode] ?? "⚠️";
 }
