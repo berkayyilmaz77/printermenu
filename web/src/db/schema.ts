@@ -78,13 +78,30 @@ export const optionChoices = pgTable("option_choices", {
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
+// Fiziksel masalar — kasiyer/garson uygulaması sipariş alırken buradan masa
+// seçiyor. Admin panelinden eklenip çıkarılıyor (printers ile aynı desen).
+export const tables = pgTable("tables", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 40 }).notNull(), // "Masa 1", "Bahçe 3" vb.
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderNumber: varchar("order_number", { length: 20 }).notNull(),
-  tableNumber: varchar("table_number", { length: 20 }),
-  status: varchar("status", { length: 20 }).notNull().default("new"), // new | paid | cancelled
+  tableId: integer("table_id").references(() => tables.id, { onDelete: "set null" }),
+  // tableId'nin o andaki isim kopyası — masa silinse/adı değişse bile eski
+  // sipariş/fişte doğru isim kalsın diye (diğer *Snapshot alanlarıyla aynı mantık).
+  tableNumber: varchar("table_number", { length: 40 }),
+  // open: garson hâlâ ürün ekliyor/çıkarıyor, mutfağa gitmedi.
+  // confirmed: onaylandı, print_jobs'a düştü, artık düzenlenemez.
+  // paid | cancelled: kapanmış sipariş.
+  status: varchar("status", { length: 20 }).notNull().default("open"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  confirmedAt: timestamp("confirmed_at"),
   paidAt: timestamp("paid_at"),
 });
 

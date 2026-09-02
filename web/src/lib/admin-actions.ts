@@ -10,6 +10,7 @@ import {
   printers,
   PRINTER_TYPES,
   ALLERGEN_CODES,
+  tables,
 } from "@/db/schema";
 import { auth } from "@/auth";
 import { and, asc, eq, sql } from "drizzle-orm";
@@ -20,7 +21,7 @@ import { PRESET_OPTION_GROUPS, type PresetOptionGroupKind } from "./option-prese
 // Bütün mutasyonlar server action — proxy.ts optimistic bir kontrol yapıyor
 // ama Server Action'lar proxy matcher'ından bağımsız da çağrılabildiği için
 // (bkz. Next.js proxy.js dokümanı) burada da oturum kontrolü tekrarlanıyor.
-async function requireAdmin() {
+export async function requireAdmin() {
   const session = await auth();
   if (!session?.user) {
     throw new Error("Bu işlem için giriş yapmanız gerekiyor.");
@@ -451,6 +452,67 @@ export async function togglePrinterActive(id: number, next: boolean) {
   const db = getDb();
   await db.update(printers).set({ isActive: next }).where(eq(printers.id, id));
   revalidatePath("/admin/printers");
+}
+
+// ---------- Masalar ----------
+
+export async function createTable(formData: FormData) {
+  await requireAdmin();
+  const name = str(formData, "name");
+  if (!name) throw new Error("Masa adı zorunlu.");
+
+  const db = getDb();
+  const [{ maxSort }] = await db
+    .select({ maxSort: sql<number>`coalesce(max(${tables.sortOrder}), -1)` })
+    .from(tables);
+
+  await db.insert(tables).values({ name, sortOrder: maxSort + 1 });
+  revalidatePath("/admin/tables");
+  revalidatePath("/admin/orders");
+}
+
+export async function updateTable(id: number, formData: FormData) {
+  await requireAdmin();
+  const name = str(formData, "name");
+  if (!name) throw new Error("Masa adı zorunlu.");
+
+  const db = getDb();
+  await db.update(tables).set({ name }).where(eq(tables.id, id));
+  revalidatePath("/admin/tables");
+  revalidatePath("/admin/orders");
+}
+
+export async function deleteTable(id: number) {
+  await requireAdmin();
+  const db = getDb();
+  await db.delete(tables).where(eq(tables.id, id));
+  revalidatePath("/admin/tables");
+  revalidatePath("/admin/orders");
+}
+
+export async function toggleTableActive(id: number, next: boolean) {
+  await requireAdmin();
+  const db = getDb();
+  await db.update(tables).set({ isActive: next }).where(eq(tables.id, id));
+  revalidatePath("/admin/tables");
+  revalidatePath("/admin/orders");
+}
+
+export async function moveTable(id: number, direction: "up" | "down") {
+  await requireAdmin();
+  const db = getDb();
+  const all = await db.select().from(tables).orderBy(asc(tables.sortOrder));
+  const index = all.findIndex((t) => t.id === id);
+  if (index === -1) return;
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (swapWith < 0 || swapWith >= all.length) return;
+
+  const a = all[index];
+  const b = all[swapWith];
+  await db.update(tables).set({ sortOrder: b.sortOrder }).where(eq(tables.id, a.id));
+  await db.update(tables).set({ sortOrder: a.sortOrder }).where(eq(tables.id, b.id));
+
+  revalidatePath("/admin/tables");
 }
 
 // ---------- Ayarlar ----------

@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createOrder, OrderValidationError, type CreateOrderInput } from "@/lib/orders";
+import { isDeviceAuthorized } from "@/lib/device-auth";
 
-// Tablet uygulaması siparişi buraya POST eder. Herkese açık internetten
-// spam sipariş/print job oluşturulmasın diye paylaşımlı bir anahtar (tablet
-// uygulamasına verilecek) isteniyor — gerçek kullanıcı auth'u değil, sadece
-// "bu istek bizim tabletten geldi" kontrolü.
-function isAuthorized(request: NextRequest) {
-  const key = request.headers.get("x-device-key");
-  const expected = process.env.TABLET_API_KEY;
-  return Boolean(expected) && key === expected;
-}
+// NOT: Bu endpoint eski, tek seferlik "müşteri kendi siparişini oluşturur"
+// akışının kalıntısı. Sipariş artık kasiyer/garson tarafından /api/staff/*
+// üzerinden alınıyor (bkz. lib/staff-orders.ts) — orası masa bazlı, çok
+// tabletli senkron akışı destekliyor. Bu route artık hiçbir client'tan
+// çağrılmıyor, ileride kaldırılabilir; şimdilik dokunmadan bırakıldı.
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isDeviceAuthorized(request)) {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
   }
 

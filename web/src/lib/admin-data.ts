@@ -6,6 +6,7 @@ import {
   optionGroups,
   optionChoices,
   printers,
+  tables,
 } from "@/db/schema";
 import { asc, eq, inArray } from "drizzle-orm";
 
@@ -14,10 +15,16 @@ export type AdminMenuItem = typeof menuItems.$inferSelect;
 export type AdminOptionGroup = typeof optionGroups.$inferSelect;
 export type AdminOptionChoice = typeof optionChoices.$inferSelect;
 export type AdminPrinter = typeof printers.$inferSelect;
+export type AdminTable = typeof tables.$inferSelect;
 
 export async function getPrintersAdmin(): Promise<AdminPrinter[]> {
   const db = getDb();
   return db.select().from(printers).orderBy(asc(printers.sortOrder));
+}
+
+export async function getTablesAdmin(): Promise<AdminTable[]> {
+  const db = getDb();
+  return db.select().from(tables).orderBy(asc(tables.sortOrder));
 }
 
 // Admin panelinde public sayfadan farklı olarak satışta olmayan (isAvailable:

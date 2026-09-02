@@ -35,6 +35,12 @@ export default async function AdminLayout({
           </div>
           <nav className="flex items-center gap-1 text-sm font-medium">
             <Link
+              href="/admin/orders"
+              className="rounded-full px-3 py-1.5 text-muted transition hover:bg-surface hover:text-foreground"
+            >
+              Sipariş Al
+            </Link>
+            <Link
               href="/admin/categories"
               className="rounded-full px-3 py-1.5 text-muted transition hover:bg-surface hover:text-foreground"
             >
@@ -45,6 +51,12 @@ export default async function AdminLayout({
               className="rounded-full px-3 py-1.5 text-muted transition hover:bg-surface hover:text-foreground"
             >
               Ürünler
+            </Link>
+            <Link
+              href="/admin/tables"
+              className="rounded-full px-3 py-1.5 text-muted transition hover:bg-surface hover:text-foreground"
+            >
+              Masalar
             </Link>
             <Link
               href="/admin/printers"

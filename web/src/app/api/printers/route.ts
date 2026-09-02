@@ -3,17 +3,13 @@ import type { NextRequest } from "next/server";
 import { getDb } from "@/db";
 import { printers } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
+import { isDeviceAuthorized } from "@/lib/device-auth";
 
-// Tablet uygulaması aktif yazıcıları buradan öğreniyor. /api/orders ile aynı
-// x-device-key koruması — adres/MAC gibi bilgiler herkese açık olmasın diye.
-function isAuthorized(request: NextRequest) {
-  const key = request.headers.get("x-device-key");
-  const expected = process.env.TABLET_API_KEY;
-  return Boolean(expected) && key === expected;
-}
-
+// Tablet uygulaması aktif yazıcıları buradan öğreniyor. Diğer /api/staff/*
+// route'larıyla aynı x-device-key koruması — adres/MAC gibi bilgiler herkese
+// açık olmasın diye.
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isDeviceAuthorized(request)) {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
   }
 

@@ -39,16 +39,39 @@ export type MenuResponse = {
   businessName: string | null;
 };
 
-// Sepetteki bir satır. unitPrice, ürün fiyatı + seçilen seçeneklerin
-// priceDelta toplamı (sunucu zaten kendi hesaplıyor ama burada da
-// gösterim için tutuyoruz).
-export type CartLine = {
-  key: string;
-  menuItemId: number;
+// --- Kasiyer/garson sipariş akışı (web tarafındaki lib/staff-orders.ts ile
+// aynı şekiller — /api/staff/* buradan JSON döner) ---
+
+export type TableOverview = {
+  id: number;
   name: string;
-  unitPrice: number;
+  order: null | {
+    id: number;
+    orderNumber: string;
+    status: string; // open | confirmed
+    total: string;
+    itemCount: number;
+  };
+};
+
+export type OrderItemOption = { name: string; priceDelta: string };
+
+export type OrderItemView = {
+  id: number;
+  menuItemId: number | null;
+  name: string;
+  unitPrice: string;
   quantity: number;
-  note: string;
-  choiceIds: number[];
-  choiceNames: string[];
+  note: string | null;
+  options: OrderItemOption[];
+};
+
+export type OrderView = {
+  id: number;
+  orderNumber: string;
+  tableId: number | null;
+  tableNumber: string | null;
+  status: string; // open | confirmed | paid | cancelled
+  total: string;
+  items: OrderItemView[];
 };
